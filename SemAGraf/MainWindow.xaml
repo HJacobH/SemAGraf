@@ -20,6 +20,19 @@
             <TextBox x:Name="TxtEnd" Text="w"/>
             <Button Content="Vypočítat trasy" Click="BtnCalculate_Click" Margin="0,10" Background="LightGreen"/>
             <TextBlock x:Name="TxtStatus" TextWrapping="Wrap" FontSize="10"/>
+            <TextBlock Text="Vektor následníků (Tab. 1):" Margin="0,10,0,0" FontWeight="Bold"/>
+            <DataGrid x:Name="DgSuccessors" Height="150" AutoGenerateColumns="True" Background="White"/>
+            <TextBlock Text="Nalezené trasy (seřazené):" Margin="0,10,0,0" FontWeight="Bold"/>
+            <ListBox x:Name="LbPaths" Height="150" Margin="0,5">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding IsVisible}" VerticalAlignment="Center" Click="PathCheckBox_Click"/>
+                            <TextBlock Text="{Binding Label}" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </StackPanel>
-    </Grid>
+       </Grid>
 </Window>

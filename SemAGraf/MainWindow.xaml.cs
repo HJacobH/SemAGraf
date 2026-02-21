@@ -21,6 +21,7 @@ namespace SemAGraf
     {
         private Graph<string, Coordinates> _graph;
 
+        private List<PathUIViewModel> _foundPaths = new List<PathUIViewModel>();
         public MainWindow()
         {
             InitializeComponent();
@@ -31,7 +32,6 @@ namespace SemAGraf
             GraphCanvas.Children.Clear();
             if (_graph == null) return;
 
-            // 1. Vykreslení hran (komunikací)
             foreach (var vertex in _graph.Vertices.Values)
             {
                 foreach (var edge in vertex.Neighbors)
@@ -39,7 +39,7 @@ namespace SemAGraf
                     var target = _graph.Vertices[edge.Target];
                     Line line = new Line
                     {
-                        X1 = vertex.Data.X * 5, // Měřítko pro Canvas
+                        X1 = vertex.Data.X * 5,
                         Y1 = vertex.Data.Y * 5,
                         X2 = target.Data.X * 5,
                         Y2 = target.Data.Y * 5,
@@ -51,7 +51,6 @@ namespace SemAGraf
                 }
             }
 
-            // 2. Vykreslení uzlů (obcí)
             foreach (var vertex in _graph.Vertices.Values)
             {
                 Ellipse circle = new Ellipse { Width = 10, Height = 10, Fill = Brushes.Black };
@@ -69,67 +68,138 @@ namespace SemAGraf
 
         private void BtnCalculate_Click(object sender, RoutedEventArgs e)
         {
-            GraphCanvas.Children.Clear();
-            DrawGraph(); // Překreslíme základní síť
+            _foundPaths.Clear();
+            var vektorNasledniku = new SuccessorTable<string>();
 
             string start = TxtStart.Text;
-            string cíl = TxtEnd.Text;
+            string cil = TxtEnd.Text;
 
-            // 1. Výpočet ZÁKLADNÍ nejkratší trasy
-            var nejkratsíTrasa = _graph.ComputePath(start, cíl, new HashSet<(string, string)>());
+            var zakladniNodes = _graph.ComputePath(start, cil, new HashSet<(string, string)>());
 
-            if (nejkratsíTrasa == null)
+            if (zakladniNodes == null)
             {
-                TxtStatus.Text = "Cesta neexistuje.";
+                MessageBox.Show("Cesta mezi zadanými uzly neexistuje.");
                 return;
             }
 
-            HighlightPath(nejkratsíTrasa, Brushes.Red); // Základní trasa (červená) [cite: 51]
-
-            var vektorNasledniků = new SuccessorTable<string>();
-
-                        // Projdeme hrany na nejkratší trase a zkusíme je jednu po druhé "zakázat"
-            for (int i = 0; i < nejkratsíTrasa.Count - 1; i++)
+            double delkaZakladni = VypocitejDelku(zakladniNodes);
+            _foundPaths.Add(new PathUIViewModel
             {
-                var uzelA = nejkratsíTrasa[i];
-                var uzelB = nejkratsíTrasa[i + 1];
+                Label = $"Základní ({delkaZakladni:F1} min)",
+                Nodes = zakladniNodes,
+                Color = Brushes.Red,
+                Length = delkaZakladni,
+                IsVisible = true
+            });
 
+            for (int i = 0; i < zakladniNodes.Count - 1; i++)
+            {
+                var uzelA = zakladniNodes[i];
+                var uzelB = zakladniNodes[i + 1];
                 var ignore = new HashSet<(string, string)> { (uzelA, uzelB), (uzelB, uzelA) };
 
-                var alternativa = _graph.ComputePath(start, cíl, ignore);
+                var altNodes = _graph.ComputePath(start, cil, ignore);
 
-                if (alternativa != null)
+                if (altNodes != null && !_foundPaths.Any(p => p.Nodes.SequenceEqual(altNodes)))
                 {
-                    HighlightPath(alternativa, Brushes.Blue); // Alternativní trasy [cite: 51]
-
-                    for (int j = 0; j < alternativa.Count - 1; j++)
+                    double delkaAlt = VypocitejDelku(altNodes);
+                    _foundPaths.Add(new PathUIViewModel
                     {
-                        vektorNasledniků.AddSuccessor(alternativa[j], alternativa[j + 1]);
-                    }
+                        Label = $"Alternativa ({delkaAlt:F1} min)",
+                        Nodes = altNodes,
+                        Color = Brushes.Blue,
+                        Length = delkaAlt,
+                        IsVisible = true
+                    });
                 }
             }
 
-            TxtStatus.Text = $"Vypočteny alternativy pro trasu {start}->{cíl}. Data uložena ve vektoru následníků.";
+            _foundPaths = _foundPaths.OrderBy(p => p.Length).ToList();
+
+            foreach (var path in _foundPaths)
+            {
+                for (int i = 0; i < path.Nodes.Count - 1; i++)
+                {
+                    vektorNasledniku.AddSuccessor(path.Nodes[i], path.Nodes[i + 1]);
+                }
+            }
+
+            LbPaths.ItemsSource = null;
+            LbPaths.ItemsSource = _foundPaths;
+
+            DgSuccessors.ItemsSource = vektorNasledniku.Table.Select(kvp => new {
+                Uzel = kvp.Key,
+                Naslednici = string.Join(", ", kvp.Value)
+            }).ToList();
+
+            UpdateVisualization();
         }
 
-        private void HighlightPath(List<string> path, Brush color)
+        private void UpdateVisualization()
+        {
+            GraphCanvas.Children.Clear();
+            DrawGraph();
+
+            double offset = 0;
+            foreach (var path in _foundPaths)
+            {
+                if (path.IsVisible)
+                {
+                    HighlightPath(path.Nodes, path.Color, offset);
+                    offset += 4;
+                }
+            }
+        }
+
+        private void PathCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateVisualization();
+        }
+
+        private double VypocitejDelku(List<string> nodes)
+        {
+            double delka = 0;
+            for (int i = 0; i < nodes.Count - 1; i++)
+            {
+                var uzel = _graph.Vertices[nodes[i]];
+                var hrana = uzel.Neighbors.FirstOrDefault(n => n.Target == nodes[i + 1]);
+                if (hrana != null) delka += hrana.Weight;
+            }
+            return delka;
+        }
+
+        private void HighlightPath(List<string> path, Brush color, double offset)
         {
             for (int i = 0; i < path.Count - 1; i++)
             {
                 var v1 = _graph.Vertices[path[i]];
                 var v2 = _graph.Vertices[path[i + 1]];
+
+                double dx = v2.Data.X - v1.Data.X;
+                double dy = v2.Data.Y - v1.Data.Y;
+                double length = Math.Sqrt(dx * dx + dy * dy);
+                double ux = -dy / length;
+                double uy = dx / length;
+
                 Line highlight = new Line
                 {
-                    X1 = v1.Data.X * 5,
-                    Y1 = v1.Data.Y * 5,
-                    X2 = v2.Data.X * 5,
-                    Y2 = v2.Data.Y * 5,
+                    X1 = (v1.Data.X * 5) + (ux * offset),
+                    Y1 = (v1.Data.Y * 5) + (uy * offset),
+                    X2 = (v2.Data.X * 5) + (ux * offset),
+                    Y2 = (v2.Data.Y * 5) + (uy * offset),
                     Stroke = color,
-                    StrokeThickness = 4,
-                    Opacity = 0.6
+                    StrokeThickness = 3,
+                    Opacity = 0.8,
+                    ToolTip = $"Trasa: {string.Join("->", path)}"
                 };
                 GraphCanvas.Children.Add(highlight);
             }
+        }
+
+        public class SuccessorRow
+        {
+            public string Uzel { get; set; }
+            public string Naslednici { get; set; }
         }
 
         private void BtnLoad_Click(object sender, RoutedEventArgs e)
@@ -139,11 +209,10 @@ namespace SemAGraf
             {
                 string jsonString = File.ReadAllText(openFileDialog.FileName);
 
-                // Nastavení pro necitlivost na velikost písmen
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
-                    IncludeFields = true // Pro jistotu, pokud byste měli pole místo vlastností
+                    IncludeFields = true
                 };
 
                 _graph = JsonSerializer.Deserialize<Graph<string, Coordinates>>(jsonString, options);

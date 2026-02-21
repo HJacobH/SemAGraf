@@ -8,14 +8,12 @@ namespace SemAGraf
 {
     public class Graph<TKey, TData> where TKey : notnull
     {
-        // POUŽÍVEJTE POUZE TENTO SLOVNÍK (odstraňte _vertices)
         public Dictionary<TKey, Vertex<TKey, TData>> Vertices { get; set; } = new();
 
         public void AddVertex(TKey id, TData data) => Vertices[id] = new Vertex<TKey, TData>(id, data);
 
         public List<TKey>? ComputePath(TKey start, TKey end, HashSet<(TKey, TKey)> ignoredEdges)
         {
-            // Kontrola existence klíčů v naplněném slovníku Vertices
             if (!Vertices.ContainsKey(start) || !Vertices.ContainsKey(end)) return null;
 
             var distances = new Dictionary<TKey, double>();
@@ -36,7 +34,6 @@ namespace SemAGraf
                 var current = priorityQueue.Dequeue();
                 if (current.Equals(end)) break;
 
-                // Zde byla chyba - nyní přistupujeme k Vertices[current]
                 foreach (var edge in Vertices[current].Neighbors)
                 {
                     if (edge.IsProblematic || ignoredEdges.Contains((current, edge.Target)))
