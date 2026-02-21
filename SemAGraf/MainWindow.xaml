@@ -1,38 +1,81 @@
 ﻿<Window x:Class="SemAGraf.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Dopravní Síť - Simulátor" Height="600" Width="800">
-    <Grid>
+        Title="Dopravní Síť - Simulátor" Height="724" Width="800">
+    <Grid Margin="0,0,0,-349">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="73*"/>
+            <ColumnDefinition Width="527*"/>
             <ColumnDefinition Width="200"/>
         </Grid.ColumnDefinitions>
 
-        <Canvas x:Name="GraphCanvas" Background="#F0F0F0" Margin="10" 
-                ClipToBounds="True"/>
+        <Grid Grid.ColumnSpan="2" Margin="0,0,0,51">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="22*"/>
+                <ColumnDefinition Width="250"/>
+            </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Column="1" Margin="10">
-            <Button Content="Načíst mapu (JSON)" Click="BtnLoad_Click" Margin="0,5"/>
-            <Separator Margin="0,10"/>
-            <TextBlock Text="Start (ID):"/>
-            <TextBox x:Name="TxtStart" Text="z"/>
-            <TextBlock Text="Cíl (ID):" Margin="0,5,0,0"/>
-            <TextBox x:Name="TxtEnd" Text="w"/>
-            <Button Content="Vypočítat trasy" Click="BtnCalculate_Click" Margin="0,10" Background="LightGreen"/>
-            <TextBlock x:Name="TxtStatus" TextWrapping="Wrap" FontSize="10"/>
-            <TextBlock Text="Vektor následníků (Tab. 1):" Margin="0,10,0,0" FontWeight="Bold"/>
-            <DataGrid x:Name="DgSuccessors" Height="150" AutoGenerateColumns="True" Background="White"/>
-            <TextBlock Text="Nalezené trasy (seřazené):" Margin="0,10,0,0" FontWeight="Bold"/>
-            <ListBox x:Name="LbPaths" Height="150" Margin="0,5">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <CheckBox IsChecked="{Binding IsVisible}" VerticalAlignment="Center" Click="PathCheckBox_Click"/>
-                            <TextBlock Text="{Binding Label}" Margin="5,0,0,0" VerticalAlignment="Center"/>
+            <Canvas x:Name="GraphCanvas" Background="#F0F0F0" Margin="10,10,61,144" ClipToBounds="True" Grid.ColumnSpan="3"/>
+
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Margin="194,10,-194,-10">
+                <StackPanel Grid.Column="1" Margin="10">
+                    <Button Content="Načíst mapu (JSON)" Click="BtnLoad_Click" Margin="0,5"/>
+                    <Separator Margin="0,10"/>
+                    <TextBlock Text="Start (ID):"/>
+                    <TextBox x:Name="TxtStart" Text="z"/>
+                    <TextBlock Text="Cíl (ID):" Margin="0,5,0,0"/>
+                    <TextBox x:Name="TxtEnd" Text="w"/>
+                    <Button Content="Vypočítat trasy" Click="BtnCalculate_Click" Margin="0,10" Background="LightGreen"/>
+                    <TextBlock x:Name="TxtStatus" TextWrapping="Wrap" FontSize="10"/>
+                    <TextBlock Text="Vektor následníků (Tab. 1):" Margin="0,10,0,0" FontWeight="Bold"/>
+                    <DataGrid x:Name="DgSuccessors" Height="150" AutoGenerateColumns="True" Background="White"/>
+                    <TextBlock Text="Nalezené trasy (seřazené):" Margin="0,10,0,0" FontWeight="Bold"/>
+                    <ListBox x:Name="LbPaths" Height="150" Margin="0,5">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox IsChecked="{Binding IsVisible}" VerticalAlignment="Center" Click="PathCheckBox_Click"/>
+                                    <TextBlock Text="{Binding Label}" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <GroupBox Header="Správa problematických hran" Margin="0,10">
+                        <StackPanel>
+                            <ComboBox x:Name="CbFrom" DisplayMemberPath="Id" Margin="0,2"/>
+                            <ComboBox x:Name="CbTo" DisplayMemberPath="Id" Margin="0,2"/>
+                            <Button Content="Označit jako neprůjezdné" Click="BtnSetProblematic_Click" Margin="0,5"/>
+                            <Button Content="Smazat komunikaci" Click="BtnRemoveEdge_Click" Margin="0,5" Background="#FFE0E0"/>
+                            <Button Content="Zprůjezdnit vše" Click="BtnClearProblematic_Click"/>
                         </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-        </StackPanel>
-       </Grid>
+                    </GroupBox>
+                    <GroupBox Header="Správa uzlů (obcí)" Margin="0,10">
+                        <StackPanel>
+                            <TextBlock Text="ID obce:"/>
+                            <TextBox x:Name="TxtNodeId" Margin="0,2"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="X:"/>
+                                <TextBox x:Name="TxtNodeX" Width="40" Margin="5,2"/>
+                                <TextBlock Text="Y:"/>
+                                <TextBox x:Name="TxtNodeY" Width="40" Margin="5,2"/>
+                            </StackPanel>
+
+                            <Button Content="Hledat / Vybrat" Click="BtnSearchNode_Click" Margin="0,5"/>
+                            <Button Content="Vložit nový uzel" Click="BtnAddNode_Click" Background="LightBlue"/>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="Nová komunikace (hrana)" Margin="0,10">
+                        <StackPanel>
+                            <TextBlock Text="Čas průjezdu (min):"/>
+                            <TextBox x:Name="TxtNewEdgeWeight" Margin="0,2" Text="10"/>
+                            <Button x:Name="BtnAddEdge" Content="Propojit vybrané obce" Click="BtnAddEdge_Click" Background="LightGreen" Margin="0,5"/>
+                            <TextBlock Text="Pozn: Použije obce vybrané v seznamech výše." FontSize="10" FontStyle="Italic" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
 </Window>

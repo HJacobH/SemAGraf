@@ -227,6 +227,121 @@ namespace SemAGraf
                     DrawGraph();
                 }
             }
+            if (_graph != null)
+            {
+                CbFrom.ItemsSource = _graph.Vertices.Values;
+                CbTo.ItemsSource = _graph.Vertices.Values;
+
+               CbFrom.SelectedIndex = 0;
+                CbTo.SelectedIndex = 1;
+
+                DrawGraph();
+                TxtStatus.Text = "Mapa byla načtena a seznamy obcí byly aktualizovány.";
+            }
+        }
+        private void BtnSetProblematic_Click(object sender, RoutedEventArgs e)
+        {
+            var uzelA = (CbFrom.SelectedItem as Vertex<string, Coordinates>)?.Id;
+            var uzelB = (CbTo.SelectedItem as Vertex<string, Coordinates>)?.Id;
+
+            if (uzelA != null && uzelB != null)
+            {
+                _graph.SetEdgeProblematic(uzelA, uzelB, true);
+
+                DrawGraph();
+            }
+            else
+            {
+                MessageBox.Show("Vyberte prosím oba uzly (obce) pro úpravu komunikace.");
+            }
+        }
+
+        private void BtnClearProblematic_Click(object sender, RoutedEventArgs e)
+        {
+            if (_graph == null) return;
+
+            foreach (var vertex in _graph.Vertices.Values)
+            {
+                foreach (var edge in vertex.Neighbors)
+                {
+                    edge.IsProblematic = false;
+                }
+            }
+            DrawGraph();
+        }
+        private void BtnRemoveEdge_Click(object sender, RoutedEventArgs e)
+        {
+            var uzelA = (CbFrom.SelectedItem as Vertex<string, Coordinates>)?.Id;
+            var uzelB = (CbTo.SelectedItem as Vertex<string, Coordinates>)?.Id;
+
+            if (uzelA != null && uzelB != null)
+            {
+                _graph.RemoveEdge(uzelA, uzelB);
+
+                TxtStatus.Text = $"Komunikace mezi {uzelA} a {uzelB} byla trvale odstraněna z modelu.";
+                DrawGraph();
+            }
+        }
+        private void BtnSearchNode_Click(object sender, RoutedEventArgs e)
+        {
+            string id = TxtNodeId.Text;
+            var uzel = _graph.FindVertex(id);
+
+            if (uzel != null)
+            {
+                CbFrom.SelectedItem = uzel;
+                TxtStatus.Text = $"Uzel '{id}' nalezen na souřadnicích [{uzel.Data.X}, {uzel.Data.Y}].";
+            }
+            else MessageBox.Show("Uzel nebyl nalezen.");
+        }
+        private void BtnAddNode_Click(object sender, RoutedEventArgs e)
+        {
+            string id = TxtNodeId.Text;
+            if (!string.IsNullOrEmpty(id) && double.TryParse(TxtNodeX.Text, out double x) && double.TryParse(TxtNodeY.Text, out double y))
+            {
+                _graph.AddVertex(id, new Coordinates { X = x, Y = y });
+                RefreshUI();
+                TxtStatus.Text = $"Uzel '{id}' byl vložen do sítě.";
+            }
+        }
+
+        private void BtnAddEdge_Click(object sender, RoutedEventArgs e)
+        {
+            var uzelA = (CbFrom.SelectedItem as Vertex<string, Coordinates>)?.Id;
+            var uzelB = (CbTo.SelectedItem as Vertex<string, Coordinates>)?.Id;
+
+            if (uzelA == null || uzelB == null)
+            {
+                MessageBox.Show("Vyberte prosím v seznamech 'Z města' a 'Do města' obce, které chcete propojit.");
+                return;
+            }
+
+            if (uzelA == uzelB)
+            {
+                MessageBox.Show("Nelze propojit obec samu se sebou.");
+                return;
+            }
+
+            if (double.TryParse(TxtNewEdgeWeight.Text, out double vaha))
+            {
+                _graph.AddEdge(uzelA, uzelB, vaha);
+
+                DrawGraph();
+                TxtStatus.Text = $"Nová obousměrná komunikace mezi {uzelA} a {uzelB} (čas: {vaha} min) byla vložena.";
+            }
+            else
+            {
+                MessageBox.Show("Zadejte platnou číselnou hodnotu pro čas průjezdu.");
+            }
+        }
+
+        private void RefreshUI()
+        {
+            CbFrom.ItemsSource = null;
+            CbFrom.ItemsSource = _graph.Vertices.Values;
+            CbTo.ItemsSource = null;
+            CbTo.ItemsSource = _graph.Vertices.Values;
+            DrawGraph();
         }
     }
 }

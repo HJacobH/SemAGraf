@@ -61,5 +61,35 @@ namespace SemAGraf
             }
             return path;
         }
+        public void SetEdgeProblematic(TKey from, TKey to, bool isProblematic)
+{
+            if (!Vertices.ContainsKey(from) || !Vertices.ContainsKey(to)) return;
+
+            var edge1 = Vertices[from].Neighbors.FirstOrDefault(e => e.Target.Equals(to));
+            var edge2 = Vertices[to].Neighbors.FirstOrDefault(e => e.Target.Equals(from));
+
+            if (edge1 != null) edge1.IsProblematic = isProblematic;
+            if (edge2 != null) edge2.IsProblematic = isProblematic;
+        }
+        public void AddEdge(TKey from, TKey to, double weight, bool isProblematic = false)
+        {
+            if (!Vertices.ContainsKey(from) || !Vertices.ContainsKey(to)) return;
+ 
+            Vertices[from].Neighbors.Add(new Edge<TKey>(to, weight, isProblematic));
+            Vertices[to].Neighbors.Add(new Edge<TKey>(from, weight, isProblematic));
+        }
+
+        public void RemoveEdge(TKey from, TKey to)
+        {
+            if (!Vertices.ContainsKey(from) || !Vertices.ContainsKey(to)) return;
+
+            Vertices[from].Neighbors.RemoveAll(e => e.Target.Equals(to));
+            Vertices[to].Neighbors.RemoveAll(e => e.Target.Equals(from));
+        }
+        public Vertex<TKey, TData>? FindVertex(TKey id)
+        {
+            if (Vertices.TryGetValue(id, out var vertex)) return vertex;
+            return null;
+        }
     }
 }
