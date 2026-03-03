@@ -343,5 +343,41 @@ namespace SemAGraf
             CbTo.ItemsSource = _graph.Vertices.Values;
             DrawGraph();
         }
+
+        private void BtnSave_Click(object sender, RoutedEventArgs e)
+        {
+            if (_graph == null)
+            {
+                MessageBox.Show("Není načten žádný graf k uložení.");
+                return;
+            }
+
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "JSON soubory (*.json)|*.json|Všechny soubory (*.*)|*.*";
+            saveFileDialog.FileName = "upravena_mapa.json";
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    var options = new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        PropertyNameCaseInsensitive = true
+                    };
+
+                    string jsonString = JsonSerializer.Serialize(_graph, options);
+
+                    File.WriteAllText(saveFileDialog.FileName, jsonString);
+
+                    TxtStatus.Text = $"Model úspěšně uložen do: {System.IO.Path.GetFileName(saveFileDialog.FileName)}";
+                    MessageBox.Show("Data byla úspěšně exportována.", "Export dokončen", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Chyba při ukládání souboru: " + ex.Message, "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
     }
 }
