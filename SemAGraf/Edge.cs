@@ -10,14 +10,12 @@ namespace SemAGraf
     {
         public TKey Target { get; set; } = default!;
         public double Weight { get; set; }
-        public bool IsProblematic { get; set; }
 
         public Edge() { }
-        public Edge(TKey target, double weight, bool isProblematic = false)
+        public Edge(TKey target, double weight)
         {
             Target = target;
             Weight = weight;
-            IsProblematic = isProblematic;
         }
     }
 }

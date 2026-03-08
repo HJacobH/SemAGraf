@@ -37,17 +37,36 @@ namespace SemAGraf
                 foreach (var edge in vertex.Neighbors)
                 {
                     var target = _graph.Vertices[edge.Target];
+
+                    bool isProblematic = _graph.ProblematicEdges.Contains((vertex.Id, edge.Target));
                     Line line = new Line
                     {
                         X1 = vertex.Data.X * 5,
                         Y1 = vertex.Data.Y * 5,
                         X2 = target.Data.X * 5,
                         Y2 = target.Data.Y * 5,
-                        Stroke = edge.IsProblematic ? Brushes.Orange : Brushes.Gray,
-                        StrokeThickness = edge.IsProblematic ? 3 : 1,
-                        StrokeDashArray = edge.IsProblematic ? new DoubleCollection { 2 } : null
+                        Stroke = isProblematic ? Brushes.Orange : Brushes.Gray,
+                        StrokeThickness = isProblematic ? 3 : 1
                     };
                     GraphCanvas.Children.Add(line);
+
+                    double midX = (line.X1 + line.X2) / 2;
+                    double midY = (line.Y1 + line.Y2) / 2;
+
+                    TextBlock weightLabel = new TextBlock
+                    {
+                        Text = $"{edge.Weight}",
+                        FontSize = 10,
+                        Foreground = Brushes.DarkSlateGray,
+                        FontWeight = FontWeights.Bold,
+                        Background = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
+                        Padding = new Thickness(2, 0, 2, 0)
+                    };
+
+                    Canvas.SetLeft(weightLabel, midX - 5);
+                    Canvas.SetTop(weightLabel, midY - 5);
+
+                    GraphCanvas.Children.Add(weightLabel);
                 }
             }
 
@@ -74,58 +93,34 @@ namespace SemAGraf
             string start = TxtStart.Text;
             string cil = TxtEnd.Text;
 
-            var zakladniNodes = _graph.ComputePath(start, cil, new HashSet<(string, string)>());
+            var allPaths = _graph.GetKShortestPaths(start, cil, 5);
 
-            if (zakladniNodes == null)
+            if (allPaths.Count == 0)
             {
-                MessageBox.Show("Cesta mezi zadanými uzly neexistuje.");
+                MessageBox.Show("Cesta neexistuje.");
                 return;
             }
 
-            double delkaZakladni = VypocitejDelku(zakladniNodes);
-            _foundPaths.Add(new PathUIViewModel
+            for (int i = 0; i < allPaths.Count; i++)
             {
-                Label = $"Základní ({delkaZakladni:F1} min)",
-                Nodes = zakladniNodes,
-                Color = Brushes.Red,
-                Length = delkaZakladni,
-                IsVisible = true
-            });
-
-            for (int i = 0; i < zakladniNodes.Count - 1; i++)
-            {
-                var uzelA = zakladniNodes[i];
-                var uzelB = zakladniNodes[i + 1];
-                var ignore = new HashSet<(string, string)> { (uzelA, uzelB), (uzelB, uzelA) };
-
-                var altNodes = _graph.ComputePath(start, cil, ignore);
-
-                if (altNodes != null && !_foundPaths.Any(p => p.Nodes.SequenceEqual(altNodes)))
+                double delka = VypocitejDelku(allPaths[i]);
+                _foundPaths.Add(new PathUIViewModel
                 {
-                    double delkaAlt = VypocitejDelku(altNodes);
-                    _foundPaths.Add(new PathUIViewModel
-                    {
-                        Label = $"Alternativa ({delkaAlt:F1} min)",
-                        Nodes = altNodes,
-                        Color = Brushes.Blue,
-                        Length = delkaAlt,
-                        IsVisible = true
-                    });
-                }
-            }
+                    Label = i == 0 ? $"Základní ({delka:F1} min)" : $"Alternativa {i} ({delka:F1} min)",
+                    Nodes = allPaths[i],
+                    Color = i == 0 ? Brushes.Red : Brushes.Blue,
+                    Length = delka,
+                    IsVisible = true
+                });
 
-            _foundPaths = _foundPaths.OrderBy(p => p.Length).ToList();
-
-            foreach (var path in _foundPaths)
-            {
-                for (int i = 0; i < path.Nodes.Count - 1; i++)
+                for (int j = 0; j < allPaths[i].Count - 1; j++)
                 {
-                    vektorNasledniku.AddSuccessor(path.Nodes[i], path.Nodes[i + 1]);
+                    vektorNasledniku.AddSuccessor(allPaths[i][j], allPaths[i][j + 1]);
                 }
             }
 
             LbPaths.ItemsSource = null;
-            LbPaths.ItemsSource = _foundPaths;
+            LbPaths.ItemsSource = _foundPaths.OrderBy(p => p.Length).ToList();
 
             DgSuccessors.ItemsSource = vektorNasledniku.Table.Select(kvp => new {
                 Uzel = kvp.Key,
@@ -260,13 +255,8 @@ namespace SemAGraf
         {
             if (_graph == null) return;
 
-            foreach (var vertex in _graph.Vertices.Values)
-            {
-                foreach (var edge in vertex.Neighbors)
-                {
-                    edge.IsProblematic = false;
-                }
-            }
+            _graph.ProblematicEdges.Clear();
+
             DrawGraph();
         }
         private void BtnRemoveEdge_Click(object sender, RoutedEventArgs e)

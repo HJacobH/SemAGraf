@@ -11,6 +11,5 @@ namespace SemAGraf
         TKey From { get; }
         TKey To { get; }
         TWeight Weight { get; set; }
-        bool IsProblematic { get; set; }
     }
 }
