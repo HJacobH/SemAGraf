@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace SemAGraf
 {
@@ -12,7 +13,7 @@ namespace SemAGraf
 
         public void AddVertex(TKey id, TData data) => Vertices[id] = new Vertex<TKey, TData>(id, data);
 
-        public HashSet<(TKey, TKey)> ProblematicEdges { get; } = new();
+        public HashSet<(TKey, TKey)> ProblematicEdges { get; set; } = new();
 
         public void SetEdgeProblematic(TKey from, TKey to, bool isProblematic)
         {
@@ -162,11 +163,17 @@ namespace SemAGraf
 
         public void RemoveEdge(TKey from, TKey to)
         {
-            if (!Vertices.ContainsKey(from) || !Vertices.ContainsKey(to)) return;
+            if (Vertices.ContainsKey(from) && Vertices.ContainsKey(to))
+            {
+                Vertices[from].Neighbors.RemoveAll(e => e.Target.Equals(to));
 
-            Vertices[from].Neighbors.RemoveAll(e => e.Target.Equals(to));
-            Vertices[to].Neighbors.RemoveAll(e => e.Target.Equals(from));
+                Vertices[to].Neighbors.RemoveAll(e => e.Target.Equals(from));
+
+                ProblematicEdges.Remove((from, to));
+                ProblematicEdges.Remove((to, from));
+            }
         }
+
         public Vertex<TKey, TData>? FindVertex(TKey id)
         {
             if (Vertices.TryGetValue(id, out var vertex)) return vertex;

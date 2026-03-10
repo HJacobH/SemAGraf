@@ -224,6 +224,9 @@ namespace SemAGraf
             }
             if (_graph != null)
             {
+                if (_graph.ProblematicEdges == null)
+                    _graph.ProblematicEdges = new HashSet<(string, string)>();
+
                 CbFrom.ItemsSource = _graph.Vertices.Values;
                 CbTo.ItemsSource = _graph.Vertices.Values;
 
@@ -334,6 +337,30 @@ namespace SemAGraf
             DrawGraph();
         }
 
+        private void BtnDeleteEdge_Click(object sender, RoutedEventArgs e)
+        {
+            if (_graph == null) return;
+
+            var uzelA = (CbFrom.SelectedItem as Vertex<string, Coordinates>)?.Id;
+            var uzelB = (CbTo.SelectedItem as Vertex<string, Coordinates>)?.Id;
+
+            if (string.IsNullOrWhiteSpace(uzelA) || string.IsNullOrWhiteSpace(uzelB) || uzelA == uzelB)
+            {
+                MessageBox.Show("Vyberte dvě různé obce v sekci 'Správa komunikací' pro smazání jejich propojení.", "Upozornění", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            _graph.RemoveEdge(uzelA, uzelB);
+
+            TxtStatus.Text = $"Komunikace mezi {uzelA} a {uzelB} byla smazána.";
+            DrawGraph();
+        }
+
+        private void PathVisibility_Changed(object sender, RoutedEventArgs e)
+        {
+            UpdateVisualization();
+        }
+
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             if (_graph == null)
@@ -353,7 +380,8 @@ namespace SemAGraf
                     var options = new JsonSerializerOptions
                     {
                         WriteIndented = true,
-                        PropertyNameCaseInsensitive = true
+                        PropertyNameCaseInsensitive = true,
+                        IncludeFields = true
                     };
 
                     string jsonString = JsonSerializer.Serialize(_graph, options);
