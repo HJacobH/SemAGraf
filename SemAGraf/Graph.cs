@@ -179,5 +179,24 @@ namespace SemAGraf
             if (Vertices.TryGetValue(id, out var vertex)) return vertex;
             return null;
         }
+
+        public void RemoveVertex(TKey id)
+        {
+            if (!Vertices.ContainsKey(id)) return;
+
+            var vertexToRemove = Vertices[id];
+
+            foreach (var edge in vertexToRemove.Neighbors)
+            {
+                if (Vertices.TryGetValue(edge.Target, out var neighbor))
+                {
+                    neighbor.Neighbors.RemoveAll(e => e.Target.Equals(id));
+                }
+            }
+
+            ProblematicEdges.RemoveWhere(p => p.Item1.Equals(id) || p.Item2.Equals(id));
+
+            Vertices.Remove(id);
+        }
     }
 }

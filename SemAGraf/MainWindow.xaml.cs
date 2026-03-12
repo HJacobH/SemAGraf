@@ -397,5 +397,40 @@ namespace SemAGraf
                 }
             }
         }
+        private void BtnDeleteNode_Click(object sender, RoutedEventArgs e)
+        {
+            if (_graph == null) return;
+
+            string id = TxtNodeId.Text;
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                MessageBox.Show("Zadejte název uzlu (ID), který chcete smazat.", "Upozornění", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!_graph.Vertices.ContainsKey(id))
+            {
+                MessageBox.Show($"Uzel '{id}' v mapě neexistuje.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var result = MessageBox.Show($"Opravdu chcete smazat uzel '{id}'? Tato akce odstraní i všechny přilehlé komunikace!",
+                                         "Potvrzení smazání",
+                                         MessageBoxButton.YesNo,
+                                         MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                _graph.RemoveVertex(id);
+
+                RefreshUI();
+
+                TxtStatus.Text = $"Uzel '{id}' a všechny jeho komunikace byly smazány.";
+                TxtNodeId.Clear();
+                TxtNodeX.Clear();
+                TxtNodeY.Clear();
+            }
+        }
     }
 }
